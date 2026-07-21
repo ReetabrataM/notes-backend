@@ -1,0 +1,12 @@
+2026-07-21T17:37:11.176Z [info]: MongoDB connected successfully
+2026-07-21T17:37:11.213Z [info]: Socket.IO initialized for real-time collaboration
+2026-07-21T17:37:11.214Z [info]: Server running on port 5000 [development]
+2026-07-21T17:38:46.863Z [info]: ReetAI timing {"route":"local","local_intent":1,"total":1}
+2026-07-21T17:41:33.043Z [debug]: Socket connected {"userId":"6a53e2790ab5646e0a273c4f","socketId":"NDDWriRDUTtbsVGCAAAB"}
+2026-07-21T19:15:45.930Z [info]: MongoDB connected successfully
+2026-07-21T19:15:45.964Z [info]: Socket.IO initialized for real-time collaboration
+2026-07-21T19:15:45.966Z [info]: Server running on port 5000 [development]
+2026-07-21T19:40:58.602Z [info]: ReetAI timing {"route":"local","local_intent":1,"total":1}
+2026-07-21T19:41:27.320Z [info]: ReetAI timing {"route":"action","tool":"find_notes_or_files","classify":3002,"total":3969}
+2026-07-21T19:41:40.946Z [info]: ReetAI timing {"route":"general","classify":2105,"total":2105}
+2026-07-21T19:56:28.107Z [warn]: MongoDB disconnected
