@@ -82,31 +82,6 @@ export const logoutAllDevices = asyncHandler(async (req: AuthRequest, res) => {
   return ApiResponse.success(res, null, 'Logged out from all devices');
 });
 
-export const resendVerification = asyncHandler(async (req, res) => {
-  const { email } = req.body;
-  if (!email) throw ApiError.badRequest('Email is required');
-  await authService.resendVerification(email);
-  return ApiResponse.success(res, null, 'If that account needs verification, a new email has been sent');
-});
-
-export const verifyEmail = asyncHandler(async (req, res) => {
-  const { token } = req.body;
-  if (!token) throw ApiError.badRequest('Verification token is required');
-  await authService.verifyEmail(token);
-  return ApiResponse.success(res, null, 'Email verified successfully');
-});
-
-export const forgotPassword = asyncHandler(async (req, res) => {
-  await authService.forgotPassword(req.body.email);
-  return ApiResponse.success(res, null, 'If that email is registered, a reset link has been sent');
-});
-
-export const resetPassword = asyncHandler(async (req, res) => {
-  const { token, newPassword } = req.body;
-  await authService.resetPassword(token, newPassword);
-  return ApiResponse.success(res, null, 'Password reset successfully. Please log in');
-});
-
 export const googleCallback = asyncHandler(async (req: any, res) => {
   const user = req.user;
   const tokens = await authService.issueTokens(user._id.toString(), user.tokenVersion);
