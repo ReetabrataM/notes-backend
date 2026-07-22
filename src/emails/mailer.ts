@@ -1,6 +1,10 @@
+import { Resend } from 'resend';
 import nodemailer from 'nodemailer';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
+
+// Initialize Resend SDK if RESEND_API_KEY is present
+const resend = env.resendApiKey ? new Resend(env.resendApiKey) : null;
 
 let transporter: nodemailer.Transporter | null = null;
 
@@ -12,6 +16,9 @@ function getTransporter() {
       port: env.smtp.port,
       secure: env.smtp.port === 465,
       auth: { user: env.smtp.user, pass: env.smtp.pass },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
     });
   }
   return transporter;
@@ -24,20 +31,49 @@ interface SendMailInput {
 }
 
 export async function sendMail({ to, subject, html }: SendMailInput): Promise<boolean> {
+  const fromAddress = env.smtp.fromEmail || 'onboarding@resend.dev';
+
+  // ------------------------------------------------------------------
+  // 1. PRIMARY PATH: Resend HTTP API (Port 443 — bypasses host blocks)
+  // ------------------------------------------------------------------
+  if (resend) {
+    try {
+      logger.info('Sending email via Resend HTTP API...', { to, subject });
+
+      const { data, error } = await resend.emails.send({
+        from: `Marginalia <${fromAddress}>`,
+        to: [to],
+        subject,
+        html,
+      });
+
+      if (error) {
+        throw new Error(`Resend API Error: ${error.message}`);
+      }
+
+      logger.info('Email sent successfully via Resend', { id: data?.id, to });
+      return true;
+    } catch (error) {
+      logger.warn('Resend HTTP API failed — attempting SMTP fallback', { error, to, subject });
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // 2. FALLBACK PATH: Nodemailer SMTP
+  // ------------------------------------------------------------------
   const t = getTransporter();
   if (!t) {
-    logger.warn('SMTP is not configured — skipping email send. Set SMTP_HOST/SMTP_USER/SMTP_PASS in .env to enable.', {
-      to,
-      subject,
-    });
+    logger.warn('Neither Resend nor SMTP is configured — skipping email send.', { to, subject });
     return false;
   }
 
   try {
-    await t.sendMail({ from: env.smtp.fromEmail, to, subject, html });
+    logger.info('Sending email via Nodemailer SMTP...', { to, subject });
+    await t.sendMail({ from: `Marginalia <${fromAddress}>`, to, subject, html });
+    logger.info('Email sent successfully via Nodemailer SMTP', { to });
     return true;
   } catch (error) {
-    logger.error('Failed to send email', { error, to, subject });
+    logger.error('Failed to send email via both Resend and SMTP', { error, to, subject });
     return false;
   }
 }
