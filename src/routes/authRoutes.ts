@@ -31,11 +31,6 @@ router.post(
   authController.changePassword
 );
 
-router.post('/verify-email', authController.verifyEmail);
-router.post('/resend-verification', authLimiter, authController.resendVerification);
-router.post('/forgot-password', authLimiter, authController.forgotPassword);
-router.post('/reset-password', authLimiter, authController.resetPassword);
-
 // Google OAuth — only functional once GOOGLE_CLIENT_ID/SECRET are set in backend/.env
 router.get('/google', (req, res, next) => {
   if (!env.googleOAuthConfigured) {

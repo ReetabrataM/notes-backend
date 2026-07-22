@@ -11,10 +11,6 @@ export interface IUser extends Document {
   bio?: string;
   themePreference: 'light' | 'dark' | 'amoled' | 'system';
   isEmailVerified: boolean;
-  emailVerificationToken?: string;
-  emailVerificationExpires?: Date;
-  passwordResetToken?: string;
-  passwordResetExpires?: Date;
   googleId?: string;
   role: 'user' | 'admin';
   isSuspended: boolean;
@@ -57,11 +53,7 @@ const userSchema = new Schema<IUser>(
       enum: ['light', 'dark', 'amoled', 'system'],
       default: 'system',
     },
-    isEmailVerified: { type: Boolean, default: false },
-    emailVerificationToken: { type: String, select: false },
-    emailVerificationExpires: { type: Date, select: false },
-    passwordResetToken: { type: String, select: false },
-    passwordResetExpires: { type: Date, select: false },
+    isEmailVerified: { type: Boolean, default: true },
     googleId: { type: String, unique: true, sparse: true },
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
     isSuspended: { type: Boolean, default: false },
