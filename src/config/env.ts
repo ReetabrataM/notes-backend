@@ -32,8 +32,9 @@ export const env = {
   },
 
   // --- Optional third-party integrations ---
-  // Each of these is OFF by default and only activates if its env vars are set.
-  // The app runs fully without any of them (local file storage, no email, no OAuth, no AI).
+  // Resend HTTP API for production email sending
+  resendApiKey: process.env.RESEND_API_KEY || '',
+
   cloudinaryConfigured: Boolean(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY),
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
@@ -60,13 +61,7 @@ export const env = {
   aiConfigured: Boolean(process.env.GEMINI_API_KEY),
   ai: {
     apiKey: process.env.GEMINI_API_KEY || '',
-    // "gemini-flash-latest" is Google's auto-updating alias for their current-gen
-    // flash model — it moves forward as Google retires older models instead of
-    // needing a manual bump every time (gemini-1.5-flash, our old hardcoded
-    // default, was fully shut down by Google and returned 404 on every request).
     model: process.env.GEMINI_MODEL || 'gemini-flash-latest',
-    // text-embedding-004 (the old default here) was deprecated and shut down by
-    // Google in early 2026. gemini-embedding-001 is the current stable replacement.
     embeddingModel: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001',
   },
 
