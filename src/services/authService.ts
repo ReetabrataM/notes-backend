@@ -5,7 +5,6 @@ import { activityLogRepository } from '../repositories/ActivityLogRepository';
 import { ApiError } from '../utils/apiResponse';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt';
 import { env } from '../config/env';
-import { sendMail, verificationEmailHtml, resetPasswordEmailHtml } from '../emails/mailer';
 import { User } from '../models/User';
 
 function hashToken(token: string): string {
@@ -39,74 +38,15 @@ class AuthService {
     const existingUsername = await userRepository.findByUsername(input.username);
     if (existingUsername) throw ApiError.conflict('This username is already taken');
 
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-
     const user = await userRepository.create({
       name: input.name,
       username: input.username.toLowerCase(),
       email: input.email.toLowerCase(),
       password: input.password,
-      emailVerificationToken: verificationToken,
-      emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      isEmailVerified: true,
     } as any);
 
-    const verifyUrl = `${env.clientUrl}/verify-email?token=${verificationToken}`;
-    await sendMail({
-      to: user.email,
-      subject: 'Verify your Marginalia account',
-      html: verificationEmailHtml(user.name, verifyUrl),
-    });
-
     return user;
-  }
-
-  async verifyEmail(token: string) {
-    const user = await User.findOne({
-      emailVerificationToken: token,
-      emailVerificationExpires: { $gt: new Date() },
-    }).select('+emailVerificationToken +emailVerificationExpires');
-
-    if (!user) throw ApiError.badRequest('Verification link is invalid or has expired');
-
-    user.isEmailVerified = true;
-    user.emailVerificationToken = undefined;
-    user.emailVerificationExpires = undefined;
-    await user.save();
-    return user;
-  }
-
-  async forgotPassword(email: string) {
-    const user = await userRepository.findByEmail(email);
-    // Always resolve successfully to avoid leaking which emails are registered
-    if (!user) return;
-
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    user.passwordResetToken = resetToken;
-    user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000);
-    await user.save();
-
-    const resetUrl = `${env.clientUrl}/reset-password?token=${resetToken}`;
-    await sendMail({
-      to: user.email,
-      subject: 'Reset your Marginalia password',
-      html: resetPasswordEmailHtml(user.name, resetUrl),
-    });
-  }
-
-  async resetPassword(token: string, newPassword: string) {
-    const user = await User.findOne({
-      passwordResetToken: token,
-      passwordResetExpires: { $gt: new Date() },
-    }).select('+passwordResetToken +passwordResetExpires');
-
-    if (!user) throw ApiError.badRequest('Reset link is invalid or has expired');
-
-    user.password = newPassword;
-    user.passwordResetToken = undefined;
-    user.passwordResetExpires = undefined;
-    user.tokenVersion += 1;
-    await user.save();
-    await sessionRepository.deleteAllForUser(user._id.toString());
   }
 
   async findOrCreateGoogleUser(profile: { googleId: string; email: string; name: string; avatarUrl?: string }) {
@@ -163,13 +103,6 @@ class AuthService {
     const isMatch = await user.comparePassword(input.password);
     if (!isMatch) throw ApiError.unauthorized('Invalid credentials');
 
-    if (!user.isEmailVerified) {
-      throw new ApiError(403, 'Please verify your email before logging in', {
-        code: 'EMAIL_NOT_VERIFIED',
-        email: user.email,
-      });
-    }
-
     user.lastLoginAt = new Date();
     await user.save();
     await activityLogRepository.log(user._id.toString(), 'logged in', 'auth');
@@ -182,24 +115,6 @@ class AuthService {
     );
 
     return { user, ...tokens };
-  }
-
-  async resendVerification(email: string) {
-    const user = await userRepository.findByEmail(email);
-    // Resolve silently either way to avoid confirming whether an email is registered
-    if (!user || user.isEmailVerified) return;
-
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    user.emailVerificationToken = verificationToken;
-    user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    await user.save();
-
-    const verifyUrl = `${env.clientUrl}/verify-email?token=${verificationToken}`;
-    await sendMail({
-      to: user.email,
-      subject: 'Verify your Marginalia account',
-      html: verificationEmailHtml(user.name, verifyUrl),
-    });
   }
 
   async refresh(refreshToken: string) {

@@ -1,6 +1,5 @@
 import { reminderRepository } from '../repositories/ReminderRepository';
 import { notificationService } from '../services/notificationService';
-import { sendMail, reminderEmailHtml } from '../emails/mailer';
 import { logger } from '../utils/logger';
 
 const CHECK_INTERVAL_MS = 60 * 1000; // check every minute
@@ -20,12 +19,6 @@ export function startReminderJob() {
           `Reminder: "${note.title || 'Untitled Note'}" is due`,
           note._id.toString()
         );
-
-        await sendMail({
-          to: owner.email,
-          subject: `Reminder: ${note.title || 'Untitled Note'}`,
-          html: reminderEmailHtml(owner.name, note.title || 'Untitled Note'),
-        });
 
         if (reminder.recurrence === 'none') {
           reminder.isCompleted = true;
